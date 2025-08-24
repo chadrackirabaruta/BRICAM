@@ -1,2 +1,8 @@
 import './bootstrap';
-import 'admin-lte/dist/js/adminlte'
+import '../sass/app.scss';
+
+import Alpine from 'alpinejs';
+
+window.Alpine = Alpine;
+
+Alpine.start();

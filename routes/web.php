@@ -27,6 +27,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Profile route
     Route::view('/profile', 'profile')->name('profile');
+    // Jetstream profile route is usually included:
+Route::middleware(['auth'])->group(function () {
+    Route::get('/user/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/user/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+     Route::delete('/user/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+
     
     // Chart data routes
     Route::prefix('dashboard')->group(function () {

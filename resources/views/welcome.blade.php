@@ -10,13 +10,14 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
 
     <!-- Styles -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+ @vite('resources/js/app.js')
+
 </head>
 <body class="antialiased font-sans">
     <div class="bg-gray-50 dark:bg-black text-black dark:text-white min-h-screen flex flex-col items-center justify-center relative">
         <!-- Background image -->
-        <img id="background" class="absolute -left-20 top-0 max-w-[877px] opacity-20" 
-             src="https://example.com/brick-background.jpg" alt="Brick Industry Background" />
+     <!--   <img id="background" class="absolute -left-20 top-0 max-w-[877px] opacity-20" 
+             src="https://example.com/brick-background.jpg" alt="Brick Industry Background" /> -->
 
         <!-- Content -->
         <div class="relative z-10 text-center p-6 max-w-lg">
@@ -31,10 +32,7 @@
                    class="px-6 py-3 rounded-lg bg-[#FF2D20] text-white font-semibold hover:bg-red-700 transition">
                     Login
                 </a>
-                <a href="#about" 
-                   class="px-6 py-3 rounded-lg border border-[#FF2D20] text-[#FF2D20] font-semibold hover:bg-[#FF2D20] hover:text-white transition">
-                    Learn More
-                </a>
+             
             </div>
         </div>
     </div>

@@ -1,73 +1,81 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Login') }}</div>
-
-                <div class="card-body">
-                    <form method="POST" action="{{ route('login') }}">
-                        @csrf
-
-                        <div class="row mb-3">
-                            <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
-
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
-
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6 offset-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-
-                                    <label class="form-check-label" for="remember">
-                                        {{ __('Remember Me') }}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-0">
-                            <div class="col-md-8 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Login') }}
-                                </button>
-
-                                @if (Route::has('password.request'))
-                                    <a class="btn btn-link" href="{{ route('password.request') }}">
-                                        {{ __('Forgot Your Password?') }}
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-                    </form>
-                </div>
+<x-guest-layout>
+    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 px-4 py-12">
+        <div class="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl p-8 sm:p-12 w-full max-w-md flex flex-col items-center transform transition-transform duration-500 hover:-translate-y-1 hover:shadow-3xl">
+            
+            <!-- Logo -->
+            <div class="mb-6 flex justify-center w-full">
+                <img src="{{ asset('img/logo.png') }}" alt="BRICAM" class="h-16 sm:h-20 mx-auto transition-transform duration-300 hover:scale-105">
             </div>
+
+            <!-- Title -->
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
+               BRICAM INDUSTRY LTD
+            </h2>
+
+            <!-- Session Status -->
+            <x-auth-session-status class="mb-4 text-center text-sm text-green-600 dark:text-green-400" :status="session('status')" />
+
+            <!-- Login Form -->
+            <form method="POST" action="{{ route('login') }}" class="w-full space-y-5">
+                @csrf
+
+                <!-- Email Address -->
+                <div>
+                    <x-input-label for="email" :value="__('Email')" class="text-gray-700 dark:text-gray-200"/>
+                    <x-text-input id="email" 
+                                  class="mt-1 block w-full px- py-3 rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-900 dark:text-gray-100 transition duration-200 text-base" 
+                                  type="email" 
+                                  name="email" 
+                                  :value="old('email')" 
+                                  required 
+                                  autofocus 
+                                  autocomplete="username" />
+                    <x-input-error :messages="$errors->get('email')" class="mt-2 text-sm text-red-500" />
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <x-input-label for="password" :value="__('Password')" class="text-gray-700 dark:text-gray-200"/>
+                    <x-text-input id="password" 
+                                  class="mt-1 block w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-900 dark:text-gray-100 transition duration-200 text-base" 
+                                  type="password" 
+                                  name="password" 
+                                  required 
+                                  autocomplete="current-password" />
+                    <x-input-error :messages="$errors->get('password')" class="mt-2 text-sm text-red-500" />
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center">
+                    <input id="remember_me" type="checkbox" class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded transition duration-200" name="remember">
+                    <label for="remember_me" class="ml-2 block text-base text-gray-700 dark:text-gray-300">
+                        {{ __('Remember me') }}
+                    </label>
+                </div>
+
+                <!-- Forgot Password & Submit -->
+                <div class="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-3 sm:space-y-0">
+                    @if (Route::has('password.request'))
+                        <a class="text-base text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 transition-colors duration-200" 
+                           href="{{ route('password.request') }}">
+                            {{ __('Forgot your password?') }}
+                        </a>
+                    @endif
+
+                    <x-primary-button class="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl transition-all duration-300 text-base">
+                        {{ __('Log in') }}
+                    </x-primary-button>
+                </div>
+            </form>
+
+            <!-- Signup Link
+            <p class="mt-6 text-center text-base text-gray-500 dark:text-gray-400">
+                Don't have an account? 
+                <a href="{{ route('register') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 font-semibold transition-colors duration-200">
+                    Sign Up
+                </a>
+            </p>
+             -->
         </div>
     </div>
-</div>
-@endsection
+</x-guest-layout>
