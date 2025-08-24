@@ -96,11 +96,6 @@ new class extends Component
             </li>
 <!-- Sign Out Link -->
 
-<a class="dropdown-item d-flex align-items-center" href="#"
-   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-    <i class="bi bi-box-arrow-right"></i>
-    <span>Sign Out</span>
-</a>
 
 <!-- Hidden Logout Form -->
 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
