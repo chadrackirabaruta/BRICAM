@@ -12,7 +12,9 @@ use App\Http\Controllers\{
     CustomerController,
     SalesController,
     DashboardController,
-    SalaryController
+    SalaryController,
+    userController
+    
 
 };
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
@@ -32,6 +34,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/user/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/user/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
      Route::delete('/user/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
+      Route::resource('users', UserController::class);
 });
 
 

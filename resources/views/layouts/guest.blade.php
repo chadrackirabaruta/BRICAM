@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'BRICAM') }}</title>
+
+    <!-- Custom Logo as Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('img/logo.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -14,6 +17,7 @@
     <!-- Scripts -->
     @vite('resources/js/app.js')
 </head>
+
 <body class="font-sans text-gray-900 antialiased bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center px-4">
 
     <!-- Centered Form Card -->

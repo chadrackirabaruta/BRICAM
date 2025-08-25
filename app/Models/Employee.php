@@ -13,41 +13,15 @@ class Employee extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
+    // ==================== ATTRIBUTES ====================
+
     protected $fillable = [
-        'code',
-        'name',
-        'email',
-        'phone',
-        'id_number',
-        'dob',
-        'gender',
-        'avatar',
-        'employee_type_id',
-        'salary_type_id',
-        'country',
-        'province',
-        'district',
-        'sector',
-        'cell',
-        'village',
-        'active',
-        'hire_date',
-        'termination_date',
-        'emergency_contact',
-        'position',
-        'production_rate'
+        'code','name','email','phone','id_number','dob','gender','avatar',
+        'employee_type_id','salary_type_id','country','province','district',
+        'sector','cell','village','active','hire_date','termination_date',
+        'emergency_contact','position','production_rate'
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'dob' => 'date:Y-m-d',
         'hire_date' => 'date:Y-m-d',
@@ -56,19 +30,9 @@ class Employee extends Model
         'production_rate' => 'decimal:2'
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array<string>
-     */
     protected $appends = [
-        'avatar_url',
-        'age',
-        'full_address',
-        'employment_status',
-        'years_of_service',
-        'months_of_service',
-        'is_new_hire'
+        'avatar_url','age','full_address','employment_status',
+        'years_of_service','months_of_service','is_new_hire'
     ];
 
     // ==================== RELATIONSHIPS ====================
@@ -114,158 +78,73 @@ class Employee extends Model
 
     // ==================== SCOPES ====================
 
-    public function scopeActive($query)
-    {
-        return $query->where('active', true);
-    }
-
-    public function scopeInactive($query)
-    {
-        return $query->where('active', false);
-    }
-
-    public function scopeByType($query, $typeId)
-    {
-        return $query->where('employee_type_id', $typeId);
-    }
-
-    public function scopeHiredBetween($query, $startDate, $endDate)
-    {
-        return $query->whereBetween('hire_date', [$startDate, $endDate]);
-    }
-
-    public function scopeCurrentlyEmployed($query)
-    {
-        return $query->where('active', true)
-                    ->whereNull('termination_date');
-    }
-
-    public function scopeTerminated($query)
-    {
-        return $query->whereNotNull('termination_date');
-    }
-
+    public function scopeActive($query) { return $query->where('active', true); }
+    public function scopeInactive($query) { return $query->where('active', false); }
+    public function scopeByType($query, $typeId) { return $query->where('employee_type_id', $typeId); }
+    public function scopeHiredBetween($query, $startDate, $endDate) { return $query->whereBetween('hire_date', [$startDate, $endDate]); }
+    public function scopeCurrentlyEmployed($query) { return $query->where('active', true)->whereNull('termination_date'); }
+    public function scopeTerminated($query) { return $query->whereNotNull('termination_date'); }
     public function scopeWithSalesBetween($query, $startDate, $endDate)
     {
-        return $query->whereHas('sales', function($salesQuery) use ($startDate, $endDate) {
-            $salesQuery->whereBetween('sale_date', [$startDate, $endDate]);
-        });
+        return $query->whereHas('sales', fn($q) => $q->whereBetween('sale_date', [$startDate, $endDate]));
     }
-
-    public function scopeNewHires($query, $startDate, $endDate)
-    {
-        return $query->whereBetween('hire_date', [$startDate, $endDate]);
-    }
-
-    public function scopeByPosition($query, $position)
-    {
-        return $query->where('position', 'like', "%{$position}%");
-    }
+    public function scopeNewHires($query, $startDate, $endDate) { return $query->whereBetween('hire_date', [$startDate, $endDate]); }
+    public function scopeByPosition($query, $position) { return $query->where('position', 'like', "%{$position}%"); }
 
     // ==================== ACCESSORS ====================
 
     public function getAvatarUrlAttribute(): string
     {
-        if (!$this->avatar) {
-            return asset('images/default-avatar.png');
-        }
-
-        return Storage::exists($this->avatar)
+        return $this->avatar && Storage::exists($this->avatar)
             ? Storage::url($this->avatar)
             : asset('images/default-avatar.png');
     }
 
-    public function getAgeAttribute(): ?int
-    {
-        return $this->dob?->age;
-    }
+    public function getAgeAttribute(): ?int { return $this->dob?->age; }
 
     public function getFullAddressAttribute(): string
     {
-        return implode(', ', array_filter([
-            $this->village,
-            $this->cell,
-            $this->sector,
-            $this->district,
-            $this->province,
-            $this->country
-        ]));
+        return implode(', ', array_filter([$this->village,$this->cell,$this->sector,$this->district,$this->province,$this->country]));
     }
 
     public function getEmploymentStatusAttribute(): string
     {
-        if ($this->termination_date) {
-            return 'Terminated';
-        }
+        if ($this->termination_date) return 'Terminated';
         return $this->active ? 'Active' : 'Inactive';
     }
 
     public function getYearsOfServiceAttribute(): float
     {
-        if (!$this->hire_date) {
-            return 0;
-        }
-        $endDate = $this->termination_date ?? now();
-        return round($this->hire_date->diffInYears($endDate, true), 1);
+        if (!$this->hire_date) return 0;
+        $end = $this->termination_date ?? now();
+        return round($this->hire_date->diffInYears($end, true), 1);
     }
 
     public function getMonthsOfServiceAttribute(): int
     {
-        if (!$this->hire_date) {
-            return 0;
-        }
-        $endDate = $this->termination_date ?? now();
-        return $this->hire_date->diffInMonths($endDate);
+        if (!$this->hire_date) return 0;
+        $end = $this->termination_date ?? now();
+        return $this->hire_date->diffInMonths($end);
     }
 
     public function getIsNewHireAttribute(): bool
     {
-        if (!$this->hire_date) {
-            return false;
-        }
-        return $this->hire_date->gte(now()->subDays(90));
+        return $this->hire_date && $this->hire_date->gte(now()->subDays(90));
     }
 
-    // ==================== BUSINESS LOGIC METHODS ====================
+    // ==================== BUSINESS LOGIC ====================
 
-    public function activate(): bool
-    {
-        return $this->update(['active' => true]);
-    }
-
-    public function deactivate(): bool
-    {
-        return $this->update(['active' => false]);
-    }
-
-    public function terminate($date = null): bool
-    {
-        return $this->update([
-            'termination_date' => $date ?? now(),
-            'active' => false
-        ]);
-    }
-
-    public function reinstate(): bool
-    {
-        return $this->update([
-            'termination_date' => null,
-            'active' => true
-        ]);
-    }
+    public function activate(): bool { return $this->update(['active' => true]); }
+    public function deactivate(): bool { return $this->update(['active' => false]); }
+    public function terminate($date = null): bool { return $this->update(['termination_date' => $date ?? now(),'active' => false]); }
+    public function reinstate(): bool { return $this->update(['termination_date' => null,'active' => true]); }
 
     public function hasSalesActivity($startDate = null, $endDate = null): bool
     {
         $query = $this->sales();
-        
-        if ($startDate && $endDate) {
-            $query->whereBetween('sale_date', [$startDate, $endDate]);
-        }
-        
+        if ($startDate && $endDate) $query->whereBetween('sale_date', [$startDate, $endDate]);
         return $query->exists();
     }
-
-    // ==================== HELPER METHODS ====================
 
     public function canBeDeleted(): bool
     {
@@ -290,36 +169,19 @@ class Employee extends Model
         ];
     }
 
-    /**
-     * Get production efficiency percentage
-     */
     public function getProductionEfficiency(): float
     {
-        if (!$this->production_rate || $this->production_rate == 0) {
-            return 0.0;
-        }
-
-        // Get the average production rate for this employee's position
-        $positionAvg = self::where('position', $this->position)
-                          ->avg('production_rate');
-        
-        if (!$positionAvg || $positionAvg == 0) {
-            return 0.0;
-        }
-
-        return round(($this->production_rate / $positionAvg) * 100, 2);
+        if (!$this->production_rate) return 0.0;
+        $positionAvg = self::where('position', $this->position)->avg('production_rate');
+        return $positionAvg ? round(($this->production_rate / $positionAvg) * 100, 2) : 0.0;
     }
 
-    /**
-     * Get recent sales performance (last 30 days)
-     */
     public function getRecentSalesPerformance(): array
     {
         $sales = $this->sales()
-                    ->where('sale_date', '>=', now()->subDays(30))
-                    ->selectRaw('SUM(amount) as total, COUNT(*) as count')
-                    ->first();
-
+                      ->where('sale_date', '>=', now()->subDays(30))
+                      ->selectRaw('SUM(amount) as total, COUNT(*) as count')
+                      ->first();
         return [
             'total_sales' => $sales->total ?? 0,
             'sales_count' => $sales->count ?? 0,
@@ -327,23 +189,11 @@ class Employee extends Model
         ];
     }
 
-    /**
-     * Check if employee is eligible for promotion
-     */
     public function isEligibleForPromotion(): bool
     {
-        // Minimum 1 year of service
-        if ($this->years_of_service < 1) {
-            return false;
-        }
-
-        // Has good sales performance
+        if ($this->years_of_service < 1) return false;
         $performance = $this->getRecentSalesPerformance();
-        if ($performance['total_sales'] < 10000) { // Example threshold
-            return false;
-        }
-
-        // Not terminated
+        if ($performance['total_sales'] < 10000) return false;
         return is_null($this->termination_date) && $this->active;
     }
 }

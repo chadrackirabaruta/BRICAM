@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
@@ -13,22 +13,17 @@ class Customer extends Model
 {
     use HasFactory;
 
-    // Status constants
+    // ==================== CONSTANTS ====================
     public const STATUS_ACTIVE = 'active';
     public const STATUS_INACTIVE = 'inactive';
     public const STATUS_BANNED = 'banned';
     public const DEFAULT_STATUS = self::STATUS_ACTIVE;
 
-    // Customer type constants
     public const TYPE_RETAIL = 'Retail';
     public const TYPE_WHOLESALE = 'Wholesale';
     public const TYPE_CONTRACTOR = 'Contractor';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
+    // ==================== MASS ASSIGNABLE ====================
     protected $fillable = [
         'code',
         'name',
@@ -38,7 +33,7 @@ class Customer extends Model
         'dob',
         'gender',
         'avatar',
-        'customer_type_id',
+        'customer_type',
         'status',
         'country',
         'province',
@@ -53,11 +48,7 @@ class Customer extends Model
         'credit_limit'
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
+    // ==================== CASTS ====================
     protected $casts = [
         'dob' => 'date:Y-m-d',
         'registration_date' => 'date:Y-m-d',
@@ -66,11 +57,7 @@ class Customer extends Model
         'credit_limit' => 'decimal:2'
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array<string>
-     */
+    // ==================== APPENDS ====================
     protected $appends = [
         'avatar_url',
         'age',
@@ -82,42 +69,19 @@ class Customer extends Model
     ];
 
     // ==================== RELATIONSHIPS ====================
-
-    /**
-     * Get the customer type associated with the customer.
-     */
-       public static function getCustomerType(): array
-    {
-        return [
-            self::TYPE_RETAIL => 'Retail',
-            self::TYPE_WHOLESALE => 'Wholesale',
-            self::TYPE_CONTRACTOR => 'Contractor'
-        ];
-    }
-
-    /**
-     * Get all sales for the customer.
-     */
     public function sales(): HasMany
     {
         return $this->hasMany(Sales::class);
     }
 
-    /**
-     * Get all payments for the customer.
-     */
-
-
-    /**
-     * Get the user account associated with the customer.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class)->withDefault();
     }
 
-    // ==================== SCOPES ====================
+  
 
+    // ==================== SCOPES ====================
     public function scopeActive($query)
     {
         return $query->where('status', self::STATUS_ACTIVE);
@@ -133,16 +97,9 @@ class Customer extends Model
         return $query->where('status', self::STATUS_BANNED);
     }
 
-    public function scopeByType($query, $typeId)
+    public function scopeByType($query, $type)
     {
-        return $query->where('customer_type_id', $typeId);
-    }
-
-    public function scopeWithPurchasesBetween($query, $startDate, $endDate)
-    {
-        return $query->whereHas('sales', function($salesQuery) use ($startDate, $endDate) {
-            $salesQuery->whereBetween('sale_date', [$startDate, $endDate]);
-        });
+        return $query->where('customer_type', $type);
     }
 
     public function scopeNewCustomers($query, $days = 30)
@@ -161,18 +118,16 @@ class Customer extends Model
     }
 
     // ==================== ACCESSORS ====================
-
     public function getAvatarUrlAttribute(): string
     {
         if (!$this->avatar) {
             return asset('images/default-avatar.png');
         }
 
-        return Storage::exists($this->avatar)
+        return Storage::disk('public')->exists($this->avatar)
             ? Storage::url($this->avatar)
             : asset('images/default-avatar.png');
     }
-
 
     public function getAgeAttribute(): ?int
     {
@@ -202,50 +157,28 @@ class Customer extends Model
         };
     }
 
-    public static function getStatusOptions(): array
-    {
-        return [
-            self::STATUS_ACTIVE => 'Active',
-            self::STATUS_INACTIVE => 'Inactive',
-            self::STATUS_BANNED => 'Banned'
-        ];
-    }
-
-    public static function getCustomerTypeOptions(): array
-    {
-        return [
-            self::TYPE_RETAIL => 'Retail',
-            self::TYPE_WHOLESALE => 'Wholesale',
-            self::TYPE_CONTRACTOR => 'Contractor'
-        ];
-    }
-
     public function getYearsAsCustomerAttribute(): float
     {
-        if (!$this->registration_date) {
-            return 0;
-        }
-        return round($this->registration_date->diffInYears(now(), true), 1);
+        return $this->registration_date
+            ? round($this->registration_date->diffInYears(now(), true), 1)
+            : 0;
     }
 
     public function getMonthsAsCustomerAttribute(): int
     {
-        if (!$this->registration_date) {
-            return 0;
-        }
-        return $this->registration_date->diffInMonths(now());
+        return $this->registration_date
+            ? $this->registration_date->diffInMonths(now())
+            : 0;
     }
 
     public function getIsNewCustomerAttribute(): bool
     {
-        if (!$this->registration_date) {
-            return false;
-        }
-        return $this->registration_date->gte(now()->subDays(90));
+        return $this->registration_date
+            ? $this->registration_date->gte(now()->subDays(90))
+            : false;
     }
 
-    // ==================== BUSINESS LOGIC METHODS ====================
-
+    // ==================== STATUS MANAGEMENT ====================
     public function activate(): bool
     {
         return $this->update(['status' => self::STATUS_ACTIVE]);
@@ -266,26 +199,43 @@ class Customer extends Model
         return $this->update(['status' => self::STATUS_ACTIVE]);
     }
 
+    // ==================== LOYALTY & PURCHASE LOGIC ====================
     public function addLoyaltyPoints(int $points): bool
     {
-        return $this->update([
-            'loyalty_points' => $this->loyalty_points + $points
-        ]);
+        return $this->update(['loyalty_points' => $this->loyalty_points + $points]);
     }
 
     public function hasRecentPurchases($days = 30): bool
     {
-        return $this->sales()
-            ->where('sale_date', '>=', now()->subDays($days))
-            ->exists();
+        return $this->sales()->where('sale_date', '>=', now()->subDays($days))->exists();
+    }
+
+    public function isEligibleForLoyaltyReward(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE &&
+               $this->loyalty_points >= 1000 &&
+               $this->hasRecentPurchases(90);
+    }
+
+    public function getPurchaseFrequency(): float
+    {
+        if ($this->months_as_customer === 0) return 0.0;
+        $count = $this->sales()->count();
+        return round($count / $this->months_as_customer, 2);
+    }
+
+    public function getAveragePurchaseValue(): float
+    {
+        $count = $this->sales()->count();
+        $total = $this->sales()->sum('amount');
+        return $count > 0 ? round($total / $count, 2) : 0.0;
     }
 
     // ==================== HELPER METHODS ====================
-
     public function canBeDeleted(): bool
     {
-        return !$this->sales()->exists() && 
-               !$this->payments()->exists() && 
+        return !$this->sales()->exists() &&
+               !$this->payments()->exists() &&
                !$this->creditNotes()->exists();
     }
 
@@ -295,7 +245,7 @@ class Customer extends Model
             'id' => $this->id,
             'code' => $this->code,
             'name' => $this->name,
-            'customer_type' => $this->customerType->name,
+            'customer_type' => $this->customer_type,
             'customer_status' => $this->customer_status,
             'registration_date' => $this->registration_date?->format('Y-m-d'),
             'years_as_customer' => $this->years_as_customer,
@@ -305,30 +255,22 @@ class Customer extends Model
         ];
     }
 
-    public function getPurchaseFrequency(): float
+    // ==================== OPTIONS ====================
+    public static function getStatusOptions(): array
     {
-        if ($this->months_as_customer == 0) {
-            return 0.0;
-        }
-
-        $purchaseCount = $this->sales()->count();
-        return round($purchaseCount / $this->months_as_customer, 2);
+        return [
+            self::STATUS_ACTIVE => 'Active',
+            self::STATUS_INACTIVE => 'Inactive',
+            self::STATUS_BANNED => 'Banned',
+        ];
     }
 
-    public function getAveragePurchaseValue(): float
+    public static function getCustomerTypeOptions(): array
     {
-        $totalSales = $this->sales()->sum('amount');
-        $purchaseCount = $this->sales()->count();
-
-        return $purchaseCount > 0 
-            ? round($totalSales / $purchaseCount, 2)
-            : 0.0;
-    }
-
-    public function isEligibleForLoyaltyReward(): bool
-    {
-        return $this->status === self::STATUS_ACTIVE &&
-               $this->loyalty_points >= 1000 &&
-               $this->hasRecentPurchases(90);
+        return [
+            self::TYPE_RETAIL => 'Retail',
+            self::TYPE_WHOLESALE => 'Wholesale',
+            self::TYPE_CONTRACTOR => 'Contractor',
+        ];
     }
 }

@@ -187,5 +187,32 @@
         </ul>
       </li>
     @endif
-  </ul>
+
+
+<!-- Users Setting -->
+@if(auth()->user()->role === 'admin')
+  <li class="nav-item">
+    <a class="nav-link collapsed {{ request()->routeIs('users.*') ? 'active' : '' }}" 
+       data-bs-target="#users-nav" data-bs-toggle="collapse" href="#">
+       
+      <!-- Settings Gear Icon with interactive colors -->
+      <i class="bi bi-gear-fill text-gray-600 nav-icon"></i>
+      <span>Users Setting</span>
+      <i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    
+    <ul id="users-nav" class="nav-content collapse {{ request()->routeIs('users.*') ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
+      <li>
+        <a href="{{ route('users.index') }}" 
+           class="{{ request()->routeIs('users.index') ? 'active' : '' }}">
+          <i class="bi bi-person-lines-fill"></i><span>Manage Users</span>
+        </a>
+      </li>
+    </ul>
+  </li>
+@endif
+
+
+
+      </ul>
 </aside><!-- End Sidebar -->
