@@ -11,9 +11,9 @@ class Production extends Model
         'employee_id',
         'production_date',
         'quantity',
-        'product_type',
+       // 'product_type',
         'unit_price',
-        'reference_number',
+       // 'reference_number',
         'status',
         'remarks'
     ];

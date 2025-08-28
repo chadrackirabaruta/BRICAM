@@ -6,7 +6,6 @@
     <!-- Page Title -->
     <div class="pagetitle d-flex justify-content-between align-items-center">
         <h1><i class="bi bi-receipt"></i> Sale Receipt</h1>
-        
         <!-- Action Buttons -->
         <div class="d-print-none">
             <div class="btn-group">
@@ -20,7 +19,6 @@
         </div>
     </div>
 
-    <!-- Main Content -->
     <section class="section">
         <div class="row">
             <div class="col-lg-12">
@@ -43,7 +41,8 @@
                                 <h3 class="text-primary">RECEIPT</h3>
                                 <p><strong>Receipt No:</strong> {{ $sale->reference_number }}</p>
                                 <p><strong>Date:</strong> {{ $sale->sale_date->format('d M Y H:i') }}</p>
-                                <p><strong>Sales Person:</strong> {{ $sale->employee->name }}</p>
+                              <p><strong>Sales Person:</strong> {{ $sale->user->name ?? '[Unknown User]' }}</p>
+
                             </div>
                         </div>
 
@@ -53,7 +52,7 @@
                                 <div class="card border-primary">
                                     <div class="card-header bg-primary text-white">Customer Information</div>
                                     <div class="card-body">
-                                        <p><strong>Name:</strong> {{ $sale->customer->name }}</p>
+                                        <p><strong>Name:</strong> {{ $sale->customer->name ?? '[Unknown Customer]' }}</p>
                                         <p><strong>Phone:</strong> {{ $sale->customer->phone ?? 'N/A' }}</p>
                                         <p><strong>Email:</strong> {{ $sale->customer->email ?? 'N/A' }}</p>
                                     </div>
@@ -66,7 +65,11 @@
                                         <p><strong>Method:</strong> {{ ucfirst(str_replace('_', ' ', $sale->payment_method)) }}</p>
                                         <p><strong>Total:</strong> {{ number_format($sale->total_price, 2) }} RWF</p>
                                         @if($sale->payment_method === 'credit')
-                                            <p><strong>Balance:</strong> <span class="{{ $sale->balance > 0 ? 'text-danger' : 'text-success' }}">{{ number_format($sale->balance, 2) }} RWF</span></p>
+                                            <p><strong>Balance:</strong> 
+                                                <span class="{{ $sale->balance > 0 ? 'text-danger' : 'text-success' }}">
+                                                    {{ number_format($sale->balance, 2) }} RWF
+                                                </span>
+                                            </p>
                                         @endif
                                     </div>
                                 </div>
@@ -86,7 +89,7 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>{{ $sale->stockType->name }} Bricks</td>
+                                        <td>{{ $sale->stockType->name ?? '[Unknown Stock]' }} Bricks</td>
                                         <td class="text-end">{{ number_format($sale->quantity) }}</td>
                                         <td class="text-end">{{ number_format($sale->unit_price, 2) }}</td>
                                         <td class="text-end">{{ number_format($sale->total_price, 2) }}</td>
@@ -117,7 +120,6 @@
     </section>
 </main>
 
-{{-- Styles --}}
 <style>
     .printable-area {
         background: white;
@@ -125,23 +127,10 @@
         border-radius: 5px;
     }
     @media print {
-        body * {
-            visibility: hidden !important;
-        }
-        .printable-area, .printable-area * {
-            visibility: visible !important;
-        }
-        .printable-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 0;
-            margin: 0;
-        }
-        .d-print-none {
-            display: none !important;
-        }
+        body * { visibility: hidden !important; }
+        .printable-area, .printable-area * { visibility: visible !important; }
+        .printable-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+        .d-print-none { display: none !important; }
     }
 </style>
 

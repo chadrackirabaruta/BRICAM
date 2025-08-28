@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 
 class Employee extends Model
 {
@@ -18,21 +17,19 @@ class Employee extends Model
     protected $fillable = [
         'code','name','email','phone','id_number','dob','gender','avatar',
         'employee_type_id','salary_type_id','country','province','district',
-        'sector','cell','village','active','hire_date','termination_date',
+        'sector','cell','village','active','termination_date',
         'emergency_contact','position','production_rate'
     ];
 
     protected $casts = [
         'dob' => 'date:Y-m-d',
-        'hire_date' => 'date:Y-m-d',
         'termination_date' => 'date:Y-m-d',
         'active' => 'boolean',
         'production_rate' => 'decimal:2'
     ];
 
     protected $appends = [
-        'avatar_url','age','full_address','employment_status',
-        'years_of_service','months_of_service','is_new_hire'
+        'avatar_url','age','full_address','employment_status'
     ];
 
     // ==================== RELATIONSHIPS ====================
@@ -81,14 +78,12 @@ class Employee extends Model
     public function scopeActive($query) { return $query->where('active', true); }
     public function scopeInactive($query) { return $query->where('active', false); }
     public function scopeByType($query, $typeId) { return $query->where('employee_type_id', $typeId); }
-    public function scopeHiredBetween($query, $startDate, $endDate) { return $query->whereBetween('hire_date', [$startDate, $endDate]); }
     public function scopeCurrentlyEmployed($query) { return $query->where('active', true)->whereNull('termination_date'); }
     public function scopeTerminated($query) { return $query->whereNotNull('termination_date'); }
     public function scopeWithSalesBetween($query, $startDate, $endDate)
     {
         return $query->whereHas('sales', fn($q) => $q->whereBetween('sale_date', [$startDate, $endDate]));
     }
-    public function scopeNewHires($query, $startDate, $endDate) { return $query->whereBetween('hire_date', [$startDate, $endDate]); }
     public function scopeByPosition($query, $position) { return $query->where('position', 'like', "%{$position}%"); }
 
     // ==================== ACCESSORS ====================
@@ -111,25 +106,6 @@ class Employee extends Model
     {
         if ($this->termination_date) return 'Terminated';
         return $this->active ? 'Active' : 'Inactive';
-    }
-
-    public function getYearsOfServiceAttribute(): float
-    {
-        if (!$this->hire_date) return 0;
-        $end = $this->termination_date ?? now();
-        return round($this->hire_date->diffInYears($end, true), 1);
-    }
-
-    public function getMonthsOfServiceAttribute(): int
-    {
-        if (!$this->hire_date) return 0;
-        $end = $this->termination_date ?? now();
-        return $this->hire_date->diffInMonths($end);
-    }
-
-    public function getIsNewHireAttribute(): bool
-    {
-        return $this->hire_date && $this->hire_date->gte(now()->subDays(90));
     }
 
     // ==================== BUSINESS LOGIC ====================
@@ -161,9 +137,6 @@ class Employee extends Model
             'name' => $this->name,
             'position' => $this->position,
             'employment_status' => $this->employment_status,
-            'hire_date' => $this->hire_date?->format('Y-m-d'),
-            'years_of_service' => $this->years_of_service,
-            'is_new_hire' => $this->is_new_hire,
             'employee_type' => $this->employeeType->name,
             'avatar_url' => $this->avatar_url
         ];
@@ -191,7 +164,6 @@ class Employee extends Model
 
     public function isEligibleForPromotion(): bool
     {
-        if ($this->years_of_service < 1) return false;
         $performance = $this->getRecentSalesPerformance();
         if ($performance['total_sales'] < 10000) return false;
         return is_null($this->termination_date) && $this->active;

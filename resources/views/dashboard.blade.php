@@ -250,40 +250,25 @@
                 </div>
               </div>
 
-              <!-- Top Products & Recent Sales -->
-              <div class="col-xxl-6 col-lg-6">
-                <div class="card">
-                  <div class="card-body">
-                    <h5 class="card-title mb-3">Top Products <span class="text-muted">| {{ $periodLabel ?? '' }}</span></h5>
-                    @if(!empty($topProducts) && count($topProducts))
-                      <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                          <thead>
-                            <tr>
-                              <th>#</th>
-                              <th>Product</th>
-                              <th class="text-end">Qty Sold</th>
-                              <th class="text-end">Revenue (RWF)</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            @foreach($topProducts as $i => $p)
-                              <tr>
-                                <td>{{ $i+1 }}</td>
-                                <td>{{ $p->product_name ?? $p['product_name'] ?? '—' }}</td>
-                                <td class="text-end">{{ number_format($p->total_quantity ?? $p['total_quantity'] ?? 0) }}</td>
-                                <td class="text-end">{{ number_format($p->total_revenue ?? $p['total_revenue'] ?? 0) }}</td>
-                              </tr>
-                            @endforeach
-                          </tbody>
-                        </table>
-                      </div>
-                    @else
-                      <div class="no-data">No product performance data for this period.</div>
-                    @endif
-                  </div>
-                </div>
-              </div>
+              <!-- Today's Production Summary -->
+<div class="col-xxl-6 col-lg-6">
+    <div class="card">
+        <div class="card-body text-center">
+            <h5 class="card-title mb-3">
+                Today's Production <span class="text-muted">| {{ now()->format('M d, Y') }}</span>
+            </h5>
+
+            <h2 class="fw-bold text-primary">
+                {{ number_format($todayTotalQuantity ?? 0) }} Bricks
+            </h2>
+
+            <p class="text-muted mb-0">
+                Total Revenue: {{ number_format($todayTotalRevenue ?? 0) }} RWF
+            </p>
+        </div>
+    </div>
+</div>
+
 
               <div class="col-xxl-6 col-lg-6">
                 <div class="card">

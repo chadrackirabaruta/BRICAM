@@ -49,38 +49,40 @@ class CustomerController extends Controller
     /**
      * Store a newly created customer
      */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'          => 'required|string|max:255',
-            'id_number'     => 'nullable|string|max:16|unique:customers',
-            'phone'         => 'required|string|max:15|unique:customers',
-            'email'         => 'nullable|email|unique:customers',
-            'country'       => 'required|string|max:100',
-            'dob'           => 'nullable|date|before:today',
-            'gender'        => 'nullable|in:Male,Female,Other',
-            'avatar'        => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'customer_type' => 'required|in:Retail,Wholesale,Contractor',
-            'status'        => 'required|in:active,inactive,banned',
-            'province'      => 'required|string|max:100',
-            'district'      => 'required|string|max:100',
-            'sector'        => 'required|string|max:100',
-            'cell'          => 'required|string|max:100',
-            'village'       => 'required|string|max:100',
-            'address'       => 'nullable|string|max:255',
-            'loyalty_points'=> 'nullable|integer|min:0',
-            'credit_limit'  => 'nullable|numeric|min:0',
-        ]);
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name'          => 'required|string|max:255',
+        'id_number'     => 'nullable|string|max:16|unique:customers',
+        'phone'         => 'required|string|max:15|unique:customers',
+        'email'         => 'nullable|email|unique:customers',
+        'country'       => 'required|string|max:100',
+        'dob'           => 'nullable|date|before:today',
+        'gender'        => 'nullable|in:Male,Female,Other',
+        'avatar'        => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        'customer_type' => 'required|in:Retail,Wholesale,Contractor',
+        'province'      => 'required|string|max:100',
+        'district'      => 'required|string|max:100',
+        'sector'        => 'required|string|max:100',
+        'cell'          => 'required|string|max:100',
+        'village'       => 'required|string|max:100',
+        'address'       => 'nullable|string|max:255',
+        'loyalty_points'=> 'nullable|integer|min:0',
+        'credit_limit'  => 'nullable|numeric|min:0',
+    ]);
 
-        if ($request->hasFile('avatar')) {
-            $validated['avatar'] = $request->file('avatar')->store('customer_avatars', 'public');
-        }
-
-        Customer::create($validated);
-
-        return redirect()->route('customers.index')
-            ->with('success', 'Customer created successfully!');
+    if ($request->hasFile('avatar')) {
+        $validated['avatar'] = $request->file('avatar')->store('customer_avatars', 'public');
     }
+
+    // ✅ Force status to "active"
+    $validated['status'] = 'active';
+
+    Customer::create($validated);
+
+    return redirect()->route('customers.index')
+        ->with('success', 'Customer created successfully!');
+}
 
     /**
      * Show form to edit customer

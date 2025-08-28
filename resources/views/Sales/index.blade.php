@@ -3,7 +3,7 @@
 @include('theme.sidebar')
 
 <main id="main" class="main">
-    <div class="pagetitle">
+    <div class="pagetitle d-flex justify-content-between align-items-center">
         <h1>Sales History</h1>
         <nav>
             <ol class="breadcrumb">
@@ -11,8 +11,8 @@
                 <li class="breadcrumb-item active">Sales</li>
             </ol>
         </nav>
-    </div><!-- End Page Title -->
-
+    </div>
+    @include('theme.success')
     <section class="section">
         <div class="row">
             <div class="col-lg-12">
@@ -24,7 +24,6 @@
                                 <i class="bi bi-plus-circle"></i> New Sale
                             </a>
                         </div>
-
                         <!-- Filter Form -->
                         <form method="GET" class="row g-3 mb-4">
                             <div class="col-md-3">
@@ -67,27 +66,27 @@
                             </div>
                         @else
                             <div class="table-responsive">
-                                <table class="table table-striped table-hover">
-                                    <thead>
+                                <table class="table table-striped table-hover align-middle">
+                                    <thead class="table-dark">
                                         <tr>
-                                            <th scope="col">#</th>
-                                            <th scope="col">Date</th>
-                                            <th scope="col">Customer</th>
-                                            <th scope="col">Employee</th>
-                                            <th scope="col">Quantity</th>
-                                            <th scope="col">Unit Price</th>
-                                            <th scope="col">Total</th>
-                                            <th scope="col">Payment</th>
-                                            <th scope="col">Actions</th>
+                                            <th>#</th>
+                                            <th>Date</th>
+                                            <th>Customer</th>
+                                            <th>Employee</th>
+                                            <th>Quantity</th>
+                                            <th>Unit Price</th>
+                                            <th>Total</th>
+                                            <th>Payment</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($sales as $sale)
                                             <tr>
-                                                <th scope="row">{{ $loop->iteration }}</th>
+                                                <td>{{ $loop->iteration }}</td>
                                                 <td>{{ $sale->sale_date->format('M d, Y') }}</td>
                                                 <td>{{ $sale->customer->name }}</td>
-                                                <td>{{ $sale->employee->name }}</td>
+                                                <td>{{ $sale->user->name ?? '[Unknown User]' }}</td>
                                                 <td>{{ number_format($sale->quantity) }} {{ $sale->stockType->name ?? '' }}</td>
                                                 <td>{{ number_format($sale->unit_price, 2) }}</td>
                                                 <td>{{ number_format($sale->total_price, 2) }}</td>
@@ -97,35 +96,35 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                 <div class="btn-group btn-group-sm" role="group" aria-label="Sale actions">
-    <!-- Receipt Button -->
-    <a href="{{ route('sales.receipt', $sale->id) }}" 
-       class="btn btn-outline-info" 
-       title="Receipt"
-       data-bs-toggle="tooltip" 
-       data-bs-placement="top">
-        <i class="bi bi-receipt"></i>
-        <span class="d-none d-sm-inline ms-1">Receipt</span>
-    </a>
-    
-    <!-- Edit Button -->
-    <a href="{{ route('sales.edit', $sale->id) }}" 
-       class="btn btn-outline-primary" 
-       title="Edit"
-       data-bs-toggle="tooltip" 
-       data-bs-placement="top">
-        <i class="bi bi-pencil"></i>
-        <span class="d-none d-sm-inline ms-1">Edit</span>
-    </a>
-    
-    <!-- Add more buttons as needed -->
-</div>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <!-- Receipt -->
+                                                        <a href="{{ route('sales.receipt', $sale->id) }}" 
+                                                           class="btn btn-outline-info" 
+                                                           title="View Receipt" 
+                                                           data-bs-toggle="tooltip" 
+                                                           data-bs-placement="top">
+                                                            <i class="bi bi-receipt"></i> 
+                                                            <span class="d-none d-sm-inline ms-1">Receipt</span>
+                                                        </a>
 
-                                                        <form action="{{ route('sales.destroy', $sale->id) }}" method="POST" class="d-inline">
+                                                        <!-- Edit -->
+                                                        <a href="{{ route('sales.edit', $sale->id) }}" 
+                                                           class="btn btn-outline-primary" 
+                                                           title="Edit Sale" 
+                                                           data-bs-toggle="tooltip" 
+                                                           data-bs-placement="top">
+                                                            <i class="bi bi-pencil-square"></i> 
+                                                            <span class="d-none d-sm-inline ms-1">Edit</span>
+                                                        </a>
+
+                                                        <!-- Return / Delete -->
+                                                        <form action="{{ route('sales.destroy', $sale->id) }}" method="POST" class="d-inline" 
+                                                              onsubmit="return confirm('Are you sure you want to return this sale? This will restore the stock.');">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this Sale?')">
-                                                                <i class="bi bi-trash"></i>
+                                                            <button type="submit" class="btn btn-outline-warning" title="Return Sale">
+                                                                <i class="bi bi-arrow-counterclockwise"></i> 
+                                                                <span class="d-none d-sm-inline ms-1">Return</span>
                                                             </button>
                                                         </form>
                                                     </div>
@@ -141,6 +140,7 @@
                                 {{ $sales->withQueryString()->links() }}
                             </div>
                         @endif
+
                     </div>
                 </div>
             </div>
@@ -150,8 +150,8 @@
 
 @include('theme.footer')
 
+@push('styles')
 <style>
-    /* Custom button hover effects */
     .btn-group .btn {
         transition: all 0.3s ease;
         border-radius: 0.25rem !important;
@@ -165,8 +165,10 @@
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 </style>
+@endpush
+
+@push('scripts')
 <script>
-    // Initialize Bootstrap tooltips
     document.addEventListener('DOMContentLoaded', function() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -174,3 +176,4 @@
         });
     });
 </script>
+@endpush

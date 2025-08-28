@@ -13,12 +13,9 @@ class Sales extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
     protected $fillable = [
         'customer_id',
-        'employee_id',
+        'employee_id', // now refers to users table
         'stock_type_id',
         'sale_date',
         'quantity',
@@ -30,9 +27,6 @@ class Sales extends Model
         'reference_number'
     ];
 
-    /**
-     * The attributes that should be cast.
-     */
     protected $casts = [
         'sale_date' => 'date',
         'unit_price' => 'decimal:2',
@@ -42,17 +36,15 @@ class Sales extends Model
         'updated_at' => 'datetime:Y-m-d H:i:s'
     ];
 
-    /**
-     * The attributes with default values.
-     */
     protected $attributes = [
         'status' => 'completed',
         'payment_method' => 'cash'
     ];
 
-    /**
-     * Relationships
-     */
+    // =======================
+    // Relationships
+    // =======================
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class)->withDefault([
@@ -60,10 +52,10 @@ class Sales extends Model
         ]);
     }
 
-    public function employee(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Employee::class)->withDefault([
-            'name' => '[Unknown Employee]'
+        return $this->belongsTo(User::class, 'employee_id')->withDefault([
+            'name' => '[Unknown User]'
         ]);
     }
 
@@ -78,15 +70,16 @@ class Sales extends Model
     {
         return $this->hasMany(SalePayment::class)->orderByDesc('created_at');
     }
+public function logs(): HasMany
+{
+    // Use correct foreign key 'sale_id', not 'sales_id'
+    return $this->hasMany(SaleLog::class, 'sale_id', 'id')->latest();
+}
 
-    public function logs(): HasMany
-    {
-        return $this->hasMany(SaleLog::class)->latest();
-    }
+    // =======================
+    // Scopes
+    // =======================
 
-    /**
-     * Scopes
-     */
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
@@ -107,14 +100,13 @@ class Sales extends Model
         return $query->where('sale_date', '>=', now()->subDays($days));
     }
 
-    /**
-     * Accessors & Mutators
-     */
+    // =======================
+    // Accessors & Mutators
+    // =======================
+
     public function getBalanceAttribute(): float
     {
-        if ($this->payment_method !== 'credit') {
-            return 0;
-        }
+        if ($this->payment_method !== 'credit') return 0;
         return max(0, $this->total_price - $this->payments()->sum('amount'));
     }
 
@@ -128,23 +120,28 @@ class Sales extends Model
         return number_format($this->total_price, 2);
     }
 
-    public function setQuantityAttribute($value)
-    {
-        $this->attributes['quantity'] = max(1, (int) $value);
-    }
+   public function setQuantityAttribute($value)
+{
+    $this->attributes['quantity'] = (int) $value;
+}
 
-    /**
-     * Model Events
-     */
+    // =======================
+    // Model Events
+    // =======================
+
     protected static function booted()
     {
         static::creating(function ($sale) {
             if (empty($sale->reference_number)) {
                 $sale->reference_number = static::generateReferenceNumber();
             }
-            
             if (empty($sale->sale_date)) {
                 $sale->sale_date = now();
+            }
+
+            // Automatically assign logged-in user
+            if (Auth::check()) {
+                $sale->employee_id = Auth::id();
             }
         });
 
@@ -175,33 +172,25 @@ class Sales extends Model
         });
     }
 
-    /**
-     * Helper Methods
-     */
+    // =======================
+    // Helper Methods
+    // =======================
+
     public function resolveLogUserId(): ?int
     {
-        if (Auth::check()) {
-            return Auth::id();
-        }
-
-        if ($this->employee_id) {
-            return $this->employee_id;
-        }
-
-        return config('system.default_user_id', 1); // Fallback to admin user
+        return Auth::id() ?? $this->employee_id ?? 1;
     }
 
     public static function generateReferenceNumber(): string
     {
         $prefix = config('sales.reference_prefix', 'SALE-');
         $date = now()->format('Ymd');
-        
+
         $lastSale = static::where('reference_number', 'like', $prefix.$date.'%')
             ->orderByDesc('id')
             ->first();
 
-        $sequence = $lastSale ? 
-            (int) substr($lastSale->reference_number, -4) + 1 : 1;
+        $sequence = $lastSale ? (int) substr($lastSale->reference_number, -4) + 1 : 1;
 
         return sprintf('%s%s%04d', $prefix, $date, $sequence);
     }
@@ -216,4 +205,14 @@ class Sales extends Model
             'recorded_by' => $this->resolveLogUserId()
         ]);
     }
+
+    // App\Models\Sales.php
+public function employee()
+{
+    return $this->belongsTo(User::class, 'employee_id');
+}
+
+
+
+
 }

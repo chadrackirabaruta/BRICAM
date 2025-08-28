@@ -43,17 +43,15 @@
         </select>
     </div>
 
-    <div class="col-md-6">
-        <label class="form-label fw-bold"><i class="bi bi-person-badge me-1"></i> Sales Person <span class="text-danger">*</span></label>
-        <select name="employee_id" class="form-select select2" required>
-            <option value="">Select Employee</option>
-            @foreach($employees as $employee)
-                @if($employee->active == 1)
-                    <option value="{{ $employee->id }}">{{ $employee->name }}</option>
-                @endif
-            @endforeach
-        </select>
-    </div>
+<div class="col-md-6">
+    <label class="form-label fw-bold"><i class="bi bi-person-badge me-1"></i> Sales Person <span class="text-danger">*</span></label>
+    <select name="employee_id" class="form-select" required disabled>
+        <option value="{{ Auth::user()->id }}" selected>{{ Auth::user()->name }}</option>
+    </select>
+    {{-- Include hidden input to actually submit the value --}}
+    <input type="hidden" name="employee_id" value="{{ Auth::user()->id }}">
+</div>
+
 </div>
 
                             <div class="row mb-3">

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
+
 class ProductionController extends Controller
 {
     /**
@@ -70,51 +71,64 @@ class ProductionController extends Controller
      */
 public function store(Request $request)
 {
+    // 1. Validate request
     $validated = $request->validate([
-        'employee_id' => 'required|exists:employees,id',
-        'production_date' => 'required|date|before_or_equal:today',
-        'quantity' => 'required|integer|min:1',
-        'unit_price' => 'required|numeric|min:1',
-        'remarks' => 'nullable|string',
+        'employee_id'      => 'required|exists:employees,id',
+        'production_date'  => 'required|date|before_or_equal:today',
+        'quantity'         => 'required|integer|min:1',
+        'unit_price'       => 'required|numeric|min:1',
+       // 'product_type'     => 'required|string|max:50', //
+        'remarks'          => 'nullable|string|max:255',
     ]);
 
     DB::beginTransaction();
 
     try {
-        // Step 1: Save production record
-        $production = Production::create($validated);
+        // 2. Save production record
+        $production = Production::create([
+            'employee_id'     => $validated['employee_id'],
+            'production_date' => $validated['production_date'],
+            'quantity'        => $validated['quantity'],
+            'unit_price'      => $validated['unit_price'],
+            //'product_type'    => $validated['product_type'], // ✅ Added
+            'remarks'         => $validated['remarks'] ?? null,
+        ]);
 
-        // Step 2: Update central production stock
+        // 3. Update central production stock
         $stock = ProductionStock::firstOrCreate([], [
-            'total_quantity' => 0,
+            'total_quantity'     => 0,
             'remaining_quantity' => 0,
         ]);
+
         $stock->increment('total_quantity', $validated['quantity']);
         $stock->increment('remaining_quantity', $validated['quantity']);
 
-        // Step 3: Get employee & store salary
+        // 4. Store salary for employee
         $employee = \App\Models\Employee::findOrFail($validated['employee_id']);
 
         \App\Models\Salary::create([
-    'employee_id'   => $employee->id,
-    'employee_type' => $employee->employeeType->name ?? 'Unknown', // ✅ FIXED LINE
-    'date'          => $validated['production_date'],
-    'amount'        => $validated['quantity'] * $validated['unit_price'],
-]);
+            'employee_id'   => $employee->id,
+            'employee_type' => $employee->employeeType->name ?? 'Unknown',
+            'date'          => $validated['production_date'],
+            'amount'        => $validated['quantity'] * $validated['unit_price'],
+        ]);
 
+        // 5. Commit transaction
         DB::commit();
 
-        return redirect()->route('productions.index')
-            ->with('success', 'Production & salary recorded successfully.');
-
+        return redirect()->back()->with('success', '✅ Production and Salary stored successfully!');
     } catch (\Exception $e) {
+        // Rollback transaction on error
         DB::rollBack();
-        Log::error('Error storing production and salary: ' . $e->getMessage());
 
-        return back()->withInput()
-            ->with('error', 'Failed to store production and salary.');
+        // Optional: log the error for debugging
+     Log::error('Production Store Error: ' . $e->getMessage());
+
+
+        return redirect()->back()->with('error', '❌ Failed to store production and salary: '.$e->getMessage());
     }
 }
+
 
 
 

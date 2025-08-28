@@ -102,62 +102,86 @@ class DashboardController extends Controller
     /**
      * Generate comprehensive dashboard data
      */
-    protected function generateDashboardData(string $filter): array
-    {
-        $dateRange = $this->getDateRange($filter);
-        
-        // Get all data in parallel to avoid redundant queries
-        $salesData = $this->getSalesData($dateRange);
-        $comparisonData = $this->getComparisonData($filter);
-        $topProducts = $this->getTopProducts(5, $dateRange);
-        $recentSales = $this->getRecentSales(5, $dateRange);
-        $salesTrend = $this->getSalesTrendData($dateRange, $filter);
+ protected function generateDashboardData(string $filter): array
+{
+    $dateRange = $this->getDateRange($filter);
 
-        // Users, Employees, and Customers data
-        $usersData = $this->getUsersData($dateRange);
-        $employeesData = $this->getEmployeesData($dateRange);
-        $customersData = $this->getCustomersData($dateRange);
+    // -----------------------------
+    // Fetch main datasets
+    // -----------------------------
+    $salesData      = $this->getSalesData($dateRange);
+    $comparisonData = $this->getComparisonData($filter);
+    $topProducts    = $this->getTopProducts(5, $dateRange);
+    $recentSales    = $this->getRecentSales(5, $dateRange);
+    $salesTrend     = $this->getSalesTrendData($dateRange, $filter);
 
-        return [
-            'filter' => $filter,
-            'periodLabel' => $this->getPeriodLabel($filter),
-            'comparisonText' => $this->getComparisonText($filter),
-            'hasComparison' => ($comparisonData['status'] ?? '') === 'success',
-            'lastUpdated' => now(),
-            'status' => 'ok',
-            
-            // Users data
-            'totalUsers' => $usersData['total'],
-            'newUsersCount' => $usersData['new'],
-            'activeUsersCount' => $usersData['active'],
-            
-            // Employees data
-            'totalEmployees' => $employeesData['total'],
-            'newEmployeesCount' => $employeesData['new'],
-            'activeEmployeesCount' => $employeesData['active'],
-            
-            // Customers data
-            'totalCustomers' => $customersData['total'],
-            'newCustomersCount' => $customersData['new'],
-            'activeCustomersCount' => $customersData['active'],
-            
-            // Sales data
-            'salesCount' => $salesData['count'],
-            'totalRevenue' => $salesData['revenue'],
-            'averageOrderValue' => $salesData['average'],
-            'salesPercentChange' => $comparisonData['sales']['change'] ?? 0,
-            'revenuePercentChange' => $comparisonData['revenue']['change'] ?? 0,
-            
-            // Chart & table datasets
-            'salesTrend' => [
-                'labels' => array_column($salesTrend, 'period'),
-                'data' => array_column($salesTrend, 'revenue'),
-                'counts' => array_column($salesTrend, 'sales_count')
-            ],
-            'topProducts' => $topProducts,
-            'recentSales' => $recentSales,
-        ];
-    }
+    // Users, Employees, Customers data
+    $usersData      = $this->getUsersData($dateRange);
+    $employeesData  = $this->getEmployeesData($dateRange);
+    $customersData  = $this->getCustomersData($dateRange);
+
+    // -----------------------------
+    // Today's Production Summary
+    // -----------------------------
+    $todayProductions = \App\Models\Production::with('employee')
+        ->whereDate('production_date', now())
+        ->get();
+
+    $todayTotalQuantity = $todayProductions->sum('quantity');
+    $todayTotalRevenue  = $todayProductions->sum(function($p) {
+        return $p->quantity * $p->unit_price;
+    });
+
+    // -----------------------------
+    // Return dashboard data
+    // -----------------------------
+    return [
+        'filter' => $filter,
+        'periodLabel' => $this->getPeriodLabel($filter),
+        'comparisonText' => $this->getComparisonText($filter),
+        'hasComparison' => ($comparisonData['status'] ?? '') === 'success',
+        'lastUpdated' => now(),
+        'status' => 'ok',
+
+        // Users data
+        'totalUsers' => $usersData['total'],
+        'newUsersCount' => $usersData['new'],
+        'activeUsersCount' => $usersData['active'],
+
+        // Employees data
+        'totalEmployees' => $employeesData['total'],
+        'newEmployeesCount' => $employeesData['new'],
+        'activeEmployeesCount' => $employeesData['active'],
+
+        // Customers data
+        'totalCustomers' => $customersData['total'],
+        'newCustomersCount' => $customersData['new'],
+        'activeCustomersCount' => $customersData['active'],
+
+        // Sales data
+        'salesCount' => $salesData['count'],
+        'totalRevenue' => $salesData['revenue'],
+        'averageOrderValue' => $salesData['average'],
+        'salesPercentChange' => $comparisonData['sales']['change'] ?? 0,
+        'revenuePercentChange' => $comparisonData['revenue']['change'] ?? 0,
+
+        // Chart & table datasets
+        'salesTrend' => [
+            'labels' => array_column($salesTrend, 'period'),
+            'data' => array_column($salesTrend, 'revenue'),
+            'counts' => array_column($salesTrend, 'sales_count')
+        ],
+        'topProducts' => $topProducts,
+        'recentSales' => $recentSales,
+
+        // -----------------------------
+        // Today’s Production
+        // -----------------------------
+        'todayProductions' => $todayProductions,
+        'todayTotalQuantity' => $todayTotalQuantity,
+        'todayTotalRevenue' => $todayTotalRevenue,
+    ];
+}
 
     /**
      * Get users data with proper error handling
