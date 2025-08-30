@@ -36,7 +36,7 @@
                   </button>
 
                   <!-- 🗑️ Delete -->
-                  <form action="{{ route('transport-records.destroy', ['transport_record' => $r->id]) }}"
+                  <!--<form action="{{ route('transport-records.destroy', ['transport_record' => $r->id]) }}"
                         method="POST"
                         class="d-inline"
                         onsubmit="return confirm('Urashaka koko gusiba iyi record?')">
@@ -45,7 +45,7 @@
                     <button type="submit" class="btn btn-sm btn-outline-danger">
                       <i class="bi bi-trash"></i>
                     </button>
-                  </form>
+                  </form>-->
                 </div>
               </div>
 

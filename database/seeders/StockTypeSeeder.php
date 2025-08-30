@@ -14,7 +14,6 @@ class StockTypeSeeder extends Seeder
     ['name' => 'mabisi', 'decrease_amount' => 0, 'increase_amount' => 1000, 'flow_stage' => 1],
     ['name' => 'gutwikwa', 'decrease_amount' => 300, 'increase_amount' => 0, 'flow_stage' => 2],
     ['name' => 'ahiye', 'decrease_amount' => 200, 'increase_amount' => 0, 'flow_stage' => 3],
-    ['name' => 'ahiye-final', 'decrease_amount' => 0, 'increase_amount' => 200, 'flow_stage' => 4],
 ]);
 
     }

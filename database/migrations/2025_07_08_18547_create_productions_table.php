@@ -14,9 +14,9 @@ class CreateProductionsTable extends Migration
             $table->foreignId('employee_id')->constrained()->onDelete('cascade');
             $table->date('production_date');
             $table->integer('quantity')->unsigned();
-            $table->string('product_type');
+           // $table->string('product_type');
             $table->decimal('unit_price', 10, 2);
-            $table->string('reference_number')->unique();
+           // $table->string('reference_number')->unique();
             $table->enum('status', ['pending', 'completed', 'rejected'])->default('completed');
             $table->text('remarks')->nullable();
             $table->timestamps();

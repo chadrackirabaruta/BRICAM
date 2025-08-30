@@ -100,25 +100,31 @@ public function create()
      */
 public function store(Request $request)
 {
-    // Validate incoming request
-    $validated = $this->validateSaleRequest($request);
-
-    // Force employee_id to the currently logged-in user's ID
-    $validated['employee_id'] = $this->resolveEmployeeId();
-
     try {
-        // Get the latest stock type ready for sale
-        $stockType = StockType::orderByDesc('flow_stage')->firstOrFail();
+        // Validate request & ensure quantity does not exceed stock
+        $validated = $this->validateSaleRequest($request);
 
-        return DB::transaction(function () use ($validated, $stockType) {
+        // Set employee_id to logged-in user
+        $validated['employee_id'] = Auth::id();
 
-            // Ensure enough stock is available
+        // Get latest stock type ready for sale
+        $stockType = StockType::orderByDesc('flow_stage')->first();
+
+        if (!$stockType) {
+            return back()
+                ->withInput()
+                ->withErrors(['stock' => 'No stock type available for sale.']);
+        }
+
+        $sale = DB::transaction(function () use ($validated, $stockType) {
+
+            // Check stock availability
             $this->checkStockAvailability($stockType, $validated['quantity']);
 
             // Create the sale record
             $sale = $this->createSaleRecord($validated, $stockType);
 
-            // Update stock and log the decrease
+            // Update stock & log the decrease
             $this->updateStock(
                 $stockType,
                 $validated['quantity'],
@@ -126,24 +132,27 @@ public function store(Request $request)
                 $validated['employee_id']
             );
 
-            // Redirect to receipt page with success message
-            return redirect()
-                ->route('sales.receipt', $sale)
-                ->with('success', 'Sale completed successfully!');
+            return $sale;
         });
 
+        return redirect()
+            ->route('sales.receipt', $sale->id)
+            ->with('success', 'Sale completed successfully!');
+
     } catch (\Throwable $e) {
-        // Log detailed error with stack trace
-        Log::error('Sales store failed: ' . $e->getMessage(), [
+        Log::error('Sale failed: '.$e->getMessage(), [
             'trace' => $e->getTraceAsString(),
-            'request' => $request->all()
+            'request' => $request->all(),
         ]);
 
         return back()
             ->withInput()
-            ->with('error', 'Failed to complete sale.');
+            ->withErrors([
+                'debug' => $e->getMessage(),
+            ]);
     }
 }
+
 
 
     /**
@@ -368,12 +377,11 @@ private function getLastStockQuantity(): int
             ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
             ->when($request->employee_id, fn($q, $id) => $q->where('employee_id', $id));
     }
-
 protected function validateSaleRequest(Request $request, Sales $sale = null)
 {
-    // Get current stock for the type
+    // Current stock for last stock type
     $currentStock = $sale
-        ? BrickStock::firstWhere('stock_type_id', $sale->stock_type_id)->quantity
+        ? BrickStock::firstWhere('stock_type_id', $sale->stock_type_id)?->quantity ?? 0
         : $this->getLastStockQuantity();
 
     // Allow original sale quantity + available stock
@@ -389,6 +397,7 @@ protected function validateSaleRequest(Request $request, Sales $sale = null)
         'quantity.max' => "Cannot exceed available stock ({$availableStock}).",
     ]);
 }
+
 
 
 
@@ -460,21 +469,17 @@ private function updateSaleRecord(Sales $sale, array $data)
  */
 private function updateStock(StockType $stockType, int $quantity, int $saleId, ?int $employeeId)
 {
-    // Ensure stock record exists
     $stock = BrickStock::firstOrCreate(
         ['stock_type_id' => $stockType->id],
         ['quantity' => 0]
     );
 
-    // Prevent negative stock
     if ($quantity > $stock->quantity) {
         throw new \Exception("Insufficient stock. Available: {$stock->quantity}, Requested: {$quantity}");
     }
 
-    // Decrease stock
     $stock->decrement('quantity', $quantity);
 
-    // Log stock movement
     BrickStockLog::create([
         'employee_id'   => $employeeId,
         'stock_type_id' => $stockType->id,
@@ -485,9 +490,9 @@ private function updateStock(StockType $stockType, int $quantity, int $saleId, ?
         'remarks'       => 'Sold to customer',
     ]);
 
-    // Optional: Refresh stockType to reflect new quantity
     $stockType->refresh();
 }
+
 
 
 
