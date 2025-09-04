@@ -31,5 +31,5 @@
     document.querySelectorAll('#success-message, #danger-message').forEach(function (element) {
       element.style.display = 'none';
     });
-  }, 7000);
+  }, 12000);
 </script>

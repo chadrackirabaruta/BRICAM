@@ -177,7 +177,7 @@
         
         @if(request('filter') || request('date_range') || request('employee_filter'))
           <a href="{{ route('transport-records.index') }}" class="btn btn-sm btn-outline-danger">
-            <i class="bi bi-x-circle"></i> Subiza
+            <i class="bi bi-x-circle"></i> Siba
           </a>
         @endif
       </div>
@@ -194,8 +194,9 @@
     $end = $hasCustomRange ? \Carbon\Carbon::parse($range[1])->format('d/m/Y') : null;
 @endphp
 
-<div class="alert alert-info py-2 mb-3 d-flex align-items-center">
+<div class="bg-info py-2 mb-3" >
   <i class="bi bi-info-circle me-2"></i>
+
 
   @if($employee)
     Reba ibyakozwe na <strong>{{ $employee }}</strong>

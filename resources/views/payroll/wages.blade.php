@@ -255,7 +255,7 @@ $(document).ready(function () {
           </div>
           <div class="mb-3">
             <label for="add-employee-type" class="form-label">Employee Type</label>
-       <select class="form-select" id="add-employee-type" name="employee_type" required>
+       <select class="form-select" id="add-employee-type" name="employee_type" required disabled>
     <option value="">Select Type</option>
     @foreach($employeeTypes as $id => $type)
         <option value="{{ $id }}" {{ $id == $defaultEmployeeTypeId ? 'selected' : '' }}>
@@ -302,7 +302,7 @@ $(document).ready(function () {
           <div class="mb-3">
             <label for="edit-employee-id" class="form-label">Employee</label>
             <select class="form-select" id="edit-employee-id" name="employee_id" required>
-              <option value="">Select Employee</option>
+              <option value="" >Select Employee</option>
               @foreach($employees as $employee)
                 <option value="{{ $employee->id }}">{{ $employee->name }}</option>
               @endforeach
@@ -310,7 +310,7 @@ $(document).ready(function () {
           </div>
           <div class="mb-3">
             <label for="edit-employee-type" class="form-label">Employee Type</label>
-            <select class="form-select" id="edit-employee-type" name="employee_type" required>
+            <select class="form-select" id="edit-employee-type" name="employee_type" required disabled>
               <option value="">Select Type</option>
               @foreach($employeeTypes as $type)
                 <option value="{{ $type }}">{{ ucfirst($type) }}</option>
