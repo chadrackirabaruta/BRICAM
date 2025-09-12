@@ -124,6 +124,7 @@
                 @php
                   $totalQty = $records->sum('quantity');
                   $totalAmt = $records->sum(fn($r) => $r->quantity * $r->unit_price);
+                  $empSlug = Str::slug($empName, '_');
                 @endphp
                 <tr>
                   <td class="text-center">{{ $i++ }}</td>
@@ -131,83 +132,15 @@
                   <td class="text-end">{{ number_format($totalQty) }}</td>
                   <td class="text-end text-success">{{ number_format($totalAmt) }}</td>
                   <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
-                            data-bs-target="#detailsModal_{{ Str::slug($empName, '_') }}">
-                      <i class="bi bi-eye"></i> Show
+                    <button class="btn btn-sm btn-outline-primary show-details-btn"
+                            data-employee="{{ $empName }}" 
+                            data-records="{{ json_encode($records->values()) }}"
+                            data-total-qty="{{ $totalQty }}"
+                            data-total-amt="{{ $totalAmt }}">
+                      <i class="bi bi-eye"></i> Show Details
                     </button>
                   </td>
                 </tr>
-
-                {{-- Details Modal --}}
-              {{-- Details Modal --}}
-<div class="modal fade" id="detailsModal_{{ Str::slug($empName, '_') }}" tabindex="-1"
-    aria-labelledby="detailsLabel_{{ Str::slug($empName, '_') }}" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-light">
-        <h5 class="modal-title">
-          <i class="bi bi-person-lines-fill"></i> {{ $empName }} — Detailed Records
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body pb-0">
-        <div class="row g-4">
-          @foreach($records->sortByDesc('production_date') as $rec)
-          <div class="col-md-6 col-lg-4">
-            <div class="card shadow-sm h-100 border-start border-4 border-primary">
-              <div class="card-body">
-                <h6 class="text-muted small mb-2">
-                  <i class="bi bi-calendar2-date"></i>
-                  {{ \Carbon\Carbon::parse($rec->production_date)->format('M d, Y') }}
-                </h6>
-                <div class="mb-1 d-flex justify-content-between">
-                  <span class="fw-bold text-primary">🧱 Quantity</span>
-                  <span>{{ number_format($rec->quantity) }}</span>
-                </div>
-                <div class="mb-1 d-flex justify-content-between">
-                  <span class="fw-bold text-success">💵 Unit Price</span>
-                  <span>{{ number_format($rec->unit_price) }} Frw</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                  <span class="fw-bold text-dark">💰 Total</span>
-                  <span class="fw-bold text-primary">
-                    {{ number_format($rec->quantity * $rec->unit_price) }} Frw
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          @endforeach
-        </div>
-
-        {{-- ✅ Totals Section --}}
-        @php
-          $grandTotal = $records->sum(fn($r) => $r->quantity * $r->unit_price);
-          $totalBricks = $records->sum('quantity');
-        @endphp
-
-        <div class="mt-4 pt-3 border-top border-2">
-          <div class="alert alert-light d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
-            <div>
-              <span class="fw-bold fs-6"><i class="bi bi-bricks"></i> Total Bricks:</span>
-              <span class="text-primary fw-semibold fs-5">{{ number_format($totalBricks) }}</span>
-            </div>
-            <div>
-              <span class="fw-bold fs-6"><i class="bi bi-cash-coin"></i> Total Amount:</span>
-              <span class="text-success fw-bold fs-5">{{ number_format($grandTotal) }} Frw</span>
-            </div>
-          </div>
-        </div>
-        {{-- END totals --}}
-      </div>
-
-      <div class="modal-footer bg-light">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
               @empty
                 <tr><td colspan="5" class="text-center">No data available.</td></tr>
               @endforelse
@@ -219,11 +152,52 @@
     </div>
   </section>
 </main>
+
+{{-- Custom Overlay Modal (No Bootstrap Modal) --}}
+<div id="detailsOverlay" class="details-overlay">
+  <div class="details-container">
+    <div class="details-header">
+      <h4 id="modalTitle">
+        <i class="bi bi-person-lines-fill text-primary"></i>
+        <span id="employeeName">Employee Name</span> — Detailed Records
+      </h4>
+      <button type="button" class="close-btn" id="closeModal">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    
+    <div class="details-body">
+      <div id="recordsContainer" class="records-grid">
+        <!-- Records will be populated here -->
+      </div>
+      
+      <div class="totals-section">
+        <div class="totals-row">
+          <div class="total-item">
+            <i class="bi bi-bricks text-primary"></i>
+            <span class="label">Total Bricks:</span>
+            <span id="totalBricks" class="value text-primary">0</span>
+          </div>
+          <div class="total-item">
+            <i class="bi bi-cash-coin text-success"></i>
+            <span class="label">Total Amount:</span>
+            <span id="totalAmount" class="value text-success">0 Frw</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 @include('theme.footer')
 
-{{-- Chart + Excel Export --}}
+{{-- Chart + Excel Export + Custom Modal --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  // Initialize custom modal functionality
+  initCustomModal();
+
+  // Chart initialization
   const labels = {!! json_encode($chartLabels ?? []) !!};
   const bricks = {!! json_encode($chartValues ?? []) !!};
   const amounts = {!! json_encode($chartAmounts ?? []) !!};
@@ -285,9 +259,102 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
-
 });
 
+// Custom Modal Implementation (No Bootstrap)
+function initCustomModal() {
+  const overlay = document.getElementById('detailsOverlay');
+  const closeBtn = document.getElementById('closeModal');
+  const showDetailsBtns = document.querySelectorAll('.show-details-btn');
+
+  // Show modal function
+  function showModal(employeeName, records, totalQty, totalAmt) {
+    // Update modal title
+    document.getElementById('employeeName').textContent = employeeName;
+    
+    // Update totals
+    document.getElementById('totalBricks').textContent = Number(totalQty).toLocaleString();
+    document.getElementById('totalAmount').textContent = Number(totalAmt).toLocaleString() + ' Frw';
+    
+    // Generate records HTML
+    const recordsContainer = document.getElementById('recordsContainer');
+    let recordsHTML = '';
+    
+    JSON.parse(records).forEach(record => {
+      const date = new Date(record.production_date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      const total = record.quantity * record.unit_price;
+      
+      recordsHTML += `
+        <div class="record-card">
+          <div class="record-date">
+            <i class="bi bi-calendar2-date"></i>
+            ${date}
+          </div>
+          <div class="record-details">
+            <div class="detail-row">
+              <span class="label">🧱 Quantity</span>
+              <span class="value">${Number(record.quantity).toLocaleString()}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">💵 Unit Price</span>
+              <span class="value">${Number(record.unit_price).toLocaleString()} Frw</span>
+            </div>
+            <div class="detail-row total-row">
+              <span class="label">💰 Total</span>
+              <span class="value">${Number(total).toLocaleString()} Frw</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    recordsContainer.innerHTML = recordsHTML;
+    
+    // Show overlay
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Hide modal function
+  function hideModal() {
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  // Event listeners
+  showDetailsBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const employeeName = this.dataset.employee;
+      const records = this.dataset.records;
+      const totalQty = this.dataset.totalQty;
+      const totalAmt = this.dataset.totalAmt;
+      
+      showModal(employeeName, records, totalQty, totalAmt);
+    });
+  });
+
+  // Close modal events
+  closeBtn.addEventListener('click', hideModal);
+  
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      hideModal();
+    }
+  });
+  
+  // ESC key to close
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && overlay.classList.contains('active')) {
+      hideModal();
+    }
+  });
+}
+
+// Excel Export
 function exportToExcel() {
   const table = document.getElementById("summaryTable");
   const wb = XLSX.utils.table_to_book(table, { sheet: "Production Summary" });

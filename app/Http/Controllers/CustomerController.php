@@ -71,9 +71,16 @@ public function store(Request $request)
         'credit_limit'  => 'nullable|numeric|min:0',
     ]);
 
-    if ($request->hasFile('avatar')) {
-        $validated['avatar'] = $request->file('avatar')->store('customer_avatars', 'public');
-    }
+ if ($request->hasFile('avatar')) {
+    $avatar     = $request->file('avatar');
+    $fileName   = time() . '_' . $avatar->getClientOriginalName();
+
+    // Move file to public/img/customer
+    $avatar->move(public_path('img/customer'), $fileName);
+
+    // Save path in DB
+    $validated['avatar'] = 'img/customer/' . $fileName;
+}
 
     // ✅ Force status to "active"
     $validated['status'] = 'active';
@@ -118,13 +125,22 @@ public function store(Request $request)
             'credit_limit'  => 'nullable|numeric|min:0',
         ]);
 
-        // Handle avatar update
-        if ($request->hasFile('avatar')) {
-            if ($customer->avatar && Storage::disk('public')->exists($customer->avatar)) {
-                Storage::disk('public')->delete($customer->avatar);
-            }
-            $validated['avatar'] = $request->file('avatar')->store('customer_avatars', 'public');
-        }
+  // Handle avatar update
+if ($request->hasFile('avatar')) {
+    // Delete old avatar if exists
+    if ($customer->avatar && file_exists(public_path($customer->avatar))) {
+        unlink(public_path($customer->avatar));
+    }
+
+    // Store new avatar in public/img/customer
+    $avatar   = $request->file('avatar');
+    $fileName = time() . '_' . $avatar->getClientOriginalName();
+    $avatar->move(public_path('img/customer'), $fileName);
+
+    // Save path in DB
+    $validated['avatar'] = 'img/customer/' . $fileName;
+}
+
 
         $customer->update($validated);
 

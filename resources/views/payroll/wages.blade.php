@@ -3,7 +3,7 @@
 @include('theme.sidebar')
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" />
 
-
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
 <!-- Buttons Extension -->
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
@@ -163,38 +163,86 @@ $(document).ready(function () {
               <th><i class="bi bi-tools"></i> Actions</th>
             </tr>
           </thead>
-          <tbody>
-            @foreach ($wages as $index => $wage)
-              <tr>
-                <td>{{ $loop->iteration }}</td>
-                <td>{{ $wage->employee->name ?? 'N/A' }}</td>
-                <td><span class="badge bg-info text-capitalize">{{ $wage->employee_type }}</span></td>
-                <td>{{ \Carbon\Carbon::parse($wage->date)->format('d M Y') }}</td>
-                <td>{{ number_format($wage->amount, 0) }} RWF</td>
-                <td>{{ Str::limit($wage->notes, 20) ?? '-' }}</td>
-                <td>
-                  <button class="btn btn-sm btn-outline-primary view-btn" data-wage="{{ json_encode($wage) }}">
-                    <i class="bi bi-eye-fill"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-warning edit-btn" data-wage="{{ json_encode($wage) }}">
-                    <i class="bi bi-pencil-square"></i>
-                  </button>
-                  <form action="{{ route('payroll.wages.destroy', $wage->id) }}" method="POST" class="d-inline"
-                        onsubmit="return confirm('Delete this wage?');">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                      <i class="bi bi-trash-fill"></i>
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            @endforeach
-          </tbody>
+     <tbody>
+  @foreach ($wages as $index => $wage)
+    <tr>
+      <!-- Counter -->
+      <td class="align-middle text-center">
+        {{ $loop->iteration }}
+      </td>
+
+      <!-- Employee Name -->
+      <td class="align-middle">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-person-circle text-primary"></i>
+          <span class="fw-semibold text-truncate" style="max-width: 150px;">{{ $wage->employee->name ?? 'N/A' }}</span>
+        </div>
+      </td>
+
+      <!-- Type -->
+      <td class="align-middle text-center">
+        <span class="badge bg-info text-light text-capitalize">
+          {{ $wage->employee_type }}
+        </span>
+      </td>
+
+      <!-- Date -->
+      <td class="align-middle text-nowrap">
+        {{ \Carbon\Carbon::parse($wage->date)->format('d M Y') }}
+      </td>
+
+      <!-- Amount -->
+      <td class="align-middle fw-bold text-nowrap">
+        {{ number_format($wage->amount, 0) }} <small class="text-muted">RWF</small>
+      </td>
+
+      <!-- Notes -->
+      <td class="align-middle">
+        <span title="{{ $wage->notes }}">{{ Str::limit($wage->notes, 30) ?? '-' }}</span>
+      </td>
+
+      <!-- Actions -->
+      <td class="align-middle text-nowrap text-end">
+        <div class="d-flex justify-content-end flex-wrap gap-1">
+          <!-- View Button -->
+          <button type="button"
+                  class="btn btn-sm btn-outline-primary view-btn"
+                  data-bs-toggle="tooltip"
+                  title="View"
+                  data-wage="{{ json_encode($wage) }}">
+            <i class="bi bi-eye-fill"></i>
+          </button>
+
+          <!-- Edit Button -->
+          <button type="button"
+                  class="btn btn-sm btn-outline-warning edit-btn"
+                  data-bs-toggle="tooltip"
+                  title="Edit"
+                  data-wage="{{ json_encode($wage) }}">
+            <i class="bi bi-pencil-square"></i>
+          </button>
+
+          <!-- Delete Form -->
+          <form action="{{ route('payroll.wages.destroy', $wage->id) }}" method="POST"
+                class="d-inline"
+                onsubmit="return confirm('Delete this wage?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete">
+              <i class="bi bi-trash-fill"></i>
+            </button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  @endforeach
+</tbody>
         </table>
       </div>
     </div>
   </section>
 </main>
+@include('theme.footer')
 
 <!-- View Wage Modal -->
 <div class="modal fade" id="viewWageModal" tabindex="-1" aria-labelledby="viewWageModalLabel" aria-hidden="true">
@@ -338,6 +386,8 @@ $(document).ready(function () {
     </div>
   </div>
 </div>
+
+
 <!-- Required Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>

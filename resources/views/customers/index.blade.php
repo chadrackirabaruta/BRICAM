@@ -72,8 +72,9 @@
                             <tr>
                                 <td>{{ $key + 1 }}</td>
                                 <td>
-                                    <img src="{{ $customer->avatar ? asset('storage/' . $customer->avatar) : asset('images/default-avatar.png') }}" 
-                                         alt="Avatar" class="rounded-circle" width="40">
+                                  <img src="{{ $customer->avatar ? asset($customer->avatar) : asset('images/default-avatar.png') }}" 
+                                    alt="Avatar" class="rounded-circle"  width="40">
+
                                 </td>
                                 <td><strong>{{ $customer->name }}</strong></td>
                                 <td>{{ $customer->id_number ?? '-' }}</td>
