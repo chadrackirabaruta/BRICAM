@@ -97,9 +97,28 @@ public function index(Request $request)
         ]);
 
         // Handle avatar upload
-        if ($request->hasFile('avatar')) {
-            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
-        }
+if ($request->hasFile('avatar')) {
+    $avatar   = $request->file('avatar');
+    $fileName = time() . '_' . $avatar->getClientOriginalName();
+
+    // Ensure folder exists (safety net)
+    $destinationPath = public_path('img/employee');
+    if (!file_exists($destinationPath)) {
+        mkdir($destinationPath, 0755, true);
+    }
+
+    // Move file to bricam/public/img/employee
+    $avatar->move($destinationPath, $fileName);
+
+    // Save this relative path (works with asset())
+    $validated['avatar'] = 'img/employee/' . $fileName;
+}
+
+
+
+
+
+
 
         // Default status
         $validated['status'] = $validated['status'] ?? 'active';
@@ -149,12 +168,26 @@ public function index(Request $request)
         ]);
 
         // Handle avatar upload and delete old
-        if ($request->hasFile('avatar')) {
-            if ($employee->avatar && Storage::disk('public')->exists($employee->avatar)) {
-                Storage::disk('public')->delete($employee->avatar);
-            }
-            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
-        }
+if ($request->hasFile('avatar')) {
+    // Delete old avatar if exists (and not default fallback)
+    if ($employee->avatar && file_exists(public_path($employee->avatar))) {
+        unlink(public_path($employee->avatar));
+    }
+
+    $avatar   = $request->file('avatar');
+    $fileName = time() . '_' . $avatar->getClientOriginalName();
+
+    $destinationPath = public_path('img/employee');
+    if (!file_exists($destinationPath)) {
+        mkdir($destinationPath, 0755, true);
+    }
+
+    $avatar->move($destinationPath, $fileName);
+
+    $validated['avatar'] = 'img/employee/' . $fileName;
+}
+
+
 
         $validated['active'] = $validated['status'] === 'active';
 

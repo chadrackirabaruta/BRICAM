@@ -70,17 +70,22 @@ public function store(Request $request)
         'loyalty_points'=> 'nullable|integer|min:0',
         'credit_limit'  => 'nullable|numeric|min:0',
     ]);
+        if ($request->hasFile('avatar')) {
+            $avatar   = $request->file('avatar');
+            $fileName = time() . '_' . $avatar->getClientOriginalName();
 
- if ($request->hasFile('avatar')) {
-    $avatar     = $request->file('avatar');
-    $fileName   = time() . '_' . $avatar->getClientOriginalName();
+            // Ensure folder exists (safety net)
+            $destinationPath = public_path('img/customer');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
 
-    // Move file to public/img/customer
-    $avatar->move(public_path('img/customer'), $fileName);
+            // Move file to bricam/public/img/customer
+            $avatar->move($destinationPath, $fileName);
 
-    // Save path in DB
-    $validated['avatar'] = 'img/customer/' . $fileName;
-}
+            // Save this relative path (works with asset())
+            $validated['avatar'] = 'img/customer/' . $fileName;
+        }
 
     // ✅ Force status to "active"
     $validated['status'] = 'active';
@@ -125,22 +130,24 @@ public function store(Request $request)
             'credit_limit'  => 'nullable|numeric|min:0',
         ]);
 
-  // Handle avatar update
-if ($request->hasFile('avatar')) {
-    // Delete old avatar if exists
-    if ($customer->avatar && file_exists(public_path($customer->avatar))) {
-        unlink(public_path($customer->avatar));
-    }
+       if ($request->hasFile('avatar')) {
+            // Delete old avatar if exists (and not default fallback)
+            if ($customer->avatar && file_exists(public_path($customer->avatar))) {
+                unlink(public_path($customer->avatar));
+            }
 
-    // Store new avatar in public/img/customer
-    $avatar   = $request->file('avatar');
-    $fileName = time() . '_' . $avatar->getClientOriginalName();
-    $avatar->move(public_path('img/customer'), $fileName);
+            $avatar   = $request->file('avatar');
+            $fileName = time() . '_' . $avatar->getClientOriginalName();
 
-    // Save path in DB
-    $validated['avatar'] = 'img/customer/' . $fileName;
-}
+            $destinationPath = public_path('img/customer');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
 
+            $avatar->move($destinationPath, $fileName);
+
+            $validated['avatar'] = 'img/customer/' . $fileName;
+        }
 
         $customer->update($validated);
 

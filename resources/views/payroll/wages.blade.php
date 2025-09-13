@@ -1,6 +1,4 @@
-@include('theme.head')
-@include('theme.header')
-@include('theme.sidebar')
+
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" />
 
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -89,7 +87,9 @@ $(document).ready(function () {
 }
   
 </style>
-
+@include('theme.head')
+@include('theme.header')
+@include('theme.sidebar')
 
 <main id="main" class="main">
   <div class="pagetitle d-flex justify-content-between align-items-center">
