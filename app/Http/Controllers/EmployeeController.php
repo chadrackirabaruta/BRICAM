@@ -75,62 +75,51 @@ public function index(Request $request)
     /**
      * Store a newly created employee in storage.
      */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'              => 'required|string|max:255',
-            'id_number'         => 'nullable|string|size:16|unique:employees,id_number',
-            'email'             => 'required|email|max:255|unique:employees,email',
-            'phone'             => 'nullable|string|regex:/^07[2389]\d{7}$/|size:10|unique:employees,phone',
-            'dob'               => 'required|date|before:today',
-            'gender'            => 'required|in:Male,Female',
-            'avatar'            => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'status'            => 'sometimes|in:active,inactive',
-            'employee_type_id'  => 'required|exists:employee_types,id',
-            'salary_type_id'    => 'required|exists:salary_types,id',
-            'country'           => 'required|string|max:100',
-            'province'          => 'required|string',
-            'district'          => 'required|string',
-            'sector'            => 'required|string',
-            'cell'              => 'required|string',
-            'village'           => 'required|string',
-        ]);
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name'              => 'required|string|max:255',
+        'id_number'         => 'nullable|string|size:16|unique:employees,id_number',
+        'email'             => 'required|email|max:255|unique:employees,email',
+        'phone'             => 'nullable|string|regex:/^07[2389]\d{7}$/|size:10|unique:employees,phone',
+        'dob'               => 'required|date|before:today',
+        'gender'            => 'required|in:Male,Female',
+        'avatar'            => 'nullable|image|mimes:jpg,jpeg,png,gif,bmp,svg,webp|max:5120', // Enhanced to include more image types
+        'status'            => 'sometimes|in:active,inactive',
+        'employee_type_id'  => 'required|exists:employee_types,id',
+        'salary_type_id'    => 'required|exists:salary_types,id',
+        'country'           => 'required|string|max:100',
+        'province'          => 'required|string',
+        'district'          => 'required|string',
+        'sector'            => 'required|string',
+        'cell'              => 'required|string',
+        'village'           => 'required|string',
+    ]);
 
-        // Handle avatar upload
-if ($request->hasFile('avatar')) {
-    $avatar   = $request->file('avatar');
-    $fileName = time() . '_' . $avatar->getClientOriginalName();
-
-    // Ensure folder exists (safety net)
-    $destinationPath = public_path('img/employee');
-    if (!file_exists($destinationPath)) {
-        mkdir($destinationPath, 0755, true);
+    // Handle avatar upload
+    if ($request->hasFile('avatar')) {
+        // Additional security check
+        $avatar = $request->file('avatar');
+        
+        // Verify it's actually an image
+        if (str_starts_with($avatar->getMimeType(), 'image/')) {
+            $validated['avatar'] = $avatar->store('avatars', 'public');
+        } else {
+            return back()->withErrors(['avatar' => 'The uploaded file is not a valid image.'])->withInput();
+        }
     }
 
-    // Move file to bricam/public/img/employee
-    $avatar->move($destinationPath, $fileName);
+    // Default status
+    $validated['status'] = $validated['status'] ?? 'active';
+    $validated['active'] = $validated['status'] === 'active';
 
-    // Save this relative path (works with asset())
-    $validated['avatar'] = 'img/employee/' . $fileName;
+    // Default hire date
+    $validated['hire_date'] = $validated['hire_date'] ?? now();
+
+    Employee::create($validated);
+
+    return redirect()->route('employees.index')->with('success', 'Employee created successfully!');
 }
-
-
-
-
-
-
-
-        // Default status
-        $validated['status'] = $validated['status'] ?? 'active';
-        $validated['active'] = $validated['status'] === 'active';
-
-        // Default hire date
-        $validated['hire_date'] = $validated['hire_date'] ?? now();
-
-        Employee::create($validated);
-
-        return redirect()->route('employees.index')->with('success', 'Employee created successfully!');
-    }
 
     /**
      * Show the form for editing an employee.
@@ -168,26 +157,12 @@ if ($request->hasFile('avatar')) {
         ]);
 
         // Handle avatar upload and delete old
-if ($request->hasFile('avatar')) {
-    // Delete old avatar if exists (and not default fallback)
-    if ($employee->avatar && file_exists(public_path($employee->avatar))) {
-        unlink(public_path($employee->avatar));
-    }
-
-    $avatar   = $request->file('avatar');
-    $fileName = time() . '_' . $avatar->getClientOriginalName();
-
-    $destinationPath = public_path('img/employee');
-    if (!file_exists($destinationPath)) {
-        mkdir($destinationPath, 0755, true);
-    }
-
-    $avatar->move($destinationPath, $fileName);
-
-    $validated['avatar'] = 'img/employee/' . $fileName;
-}
-
-
+        if ($request->hasFile('avatar')) {
+            if ($employee->avatar && Storage::disk('public')->exists($employee->avatar)) {
+                Storage::disk('public')->delete($employee->avatar);
+            }
+            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
 
         $validated['active'] = $validated['status'] === 'active';
 

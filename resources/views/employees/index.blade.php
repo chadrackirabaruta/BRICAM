@@ -72,11 +72,8 @@
                             <tr>
                                 <td>{{ $key + 1 }}</td>
                                 <td>
-   
-                              <img src="{{ $employee->avatar 
-              ? asset('bricam/public/' . $employee->avatar) 
-              : asset('bricam/public/img/employee/default-avatar.png') }}" 
-     alt="Avatar" class="rounded-circle" width="40">
+                                    <img src="{{ $employee->avatar ? asset('storage/' . $employee->avatar) : asset('images/default-avatar.png') }}" 
+                                         alt="Avatar" class="rounded-circle" width="40">
                                 </td>
                                 <td><strong>{{ $employee->name }}</strong></td>
                                 <td>{{ $employee->id_number }}</td>
